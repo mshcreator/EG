@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة شحن بطارية المعرفة - المعلمة فاطمة شنيمر</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti for winning effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+
+        /* Battery Stylings */
+        .battery-outer {
+            width: 100%;
+            max-width: 280px;
+            background: #1e293b;
+            border: 6px solid #475569;
+            border-radius: 20px;
+            padding: 10px;
+            position: relative;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+        }
+
+        .battery-cap {
+            width: 70px;
+            height: 18px;
+            background: #475569;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            margin: 0 auto -6px auto;
+        }
+
+        .battery-segment {
+            transition: all 0.5s ease;
+            transform: scale(0.98);
+        }
+
+        .battery-segment.active {
+            transform: scale(1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+
+        .pulse-btn {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        /* Print Style for Certificate */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificateModal, #certificateModal * {
+                visibility: visible;
+            }
+            #certificateModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                color: black !important;
+                display: block !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header Navigation -->
+    <header class="w-full bg-slate-900/80 backdrop-blur border-b border-slate-800 p-4 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-xl shadow-lg">
+                    <i class="fa-solid fa-bolt text-yellow-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-indigo-300">
+                        لعبة شحن بطارية المعرفة
+                    </h1>
+                    <p class="text-xs text-slate-400">إعداد المعلمة: <span class="text-pink-400 font-bold">فاطمة شنيمر</span></p>
+                </div>
+            </div>
+
+            <div id="userInfoDisplay" class="hidden flex items-center gap-2 bg-slate-800/90 px-4 py-2 rounded-xl border border-slate-700">
+                <i id="userGenderIcon" class="fa-solid fa-user-graduate text-indigo-400"></i>
+                <span id="userNameText" class="font-bold text-sm text-slate-200"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+
+        <!-- STEP 1: WELCOME & REGISTRATION SCREEN -->
+        <div id="startScreen" class="bg-slate-800/80 border border-slate-700 rounded-3xl p-6 md:p-10 shadow-2xl backdrop-blur max-w-xl mx-auto w-full text-center my-auto">
+            <div class="w-20 h-20 bg-indigo-600/30 border-2 border-indigo-400/50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <i class="fa-solid fa-[#fae8ff] fa-battery-charging text-4xl text-indigo-400 animate-bounce"></i>
+            </div>
+            
+            <h2 class="text-2xl md:text-3xl font-black mb-2 text-white">أهلاً بك يا بطل المستقبل!</h2>
+            <p class="text-slate-300 mb-8 text-sm md:text-base">سجّل اسمك لتخوض تحدي شحن البطارية الرقمية وتتوج بشهادة التميز مع معلمتك فاطمة شنيمر!</p>
+
+            <form id="registrationForm" onsubmit="startGame(event)" class="space-y-5 text-right">
+                <div>
+                    <label class="block text-slate-300 text-sm font-bold mb-2" for="studentName">اسم الطالب / الطالبة الثلاثي:</label>
+                    <div class="relative">
+                        <input type="text" id="studentName" required placeholder="ادخل اسمك هنا..." 
+                               class="w-full bg-slate-900/90 border border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition">
+                        <i class="fa-solid fa-signature absolute left-4 top-4 text-slate-500"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 text-sm font-bold mb-2">الجنس:</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center justify-center gap-2 p-3 bg-slate-900/60 border border-slate-700 rounded-xl cursor-pointer hover:border-indigo-500 transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-950/50">
+                            <input type="radio" name="gender" value="male" checked class="accent-indigo-500">
+                            <i class="fa-solid fa-child text-blue-400"></i>
+                            <span class="text-slate-200 font-bold text-sm">طالب (أنت مبدع)</span>
+                        </label>
+
+                        <label class="flex items-center justify-center gap-2 p-3 bg-slate-900/60 border border-slate-700 rounded-xl cursor-pointer hover:border-indigo-500 transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-950/50">
+                            <input type="radio" name="gender" value="female" class="accent-indigo-500">
+                            <i class="fa-solid fa-child-dress text-pink-400"></i>
+                            <span class="text-slate-200 font-bold text-sm">طالبة (أنتي مبدعة)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="pulse-btn w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:opacity-95 text-white font-black py-4 rounded-xl text-lg shadow-xl shadow-indigo-500/30 transition transform active:scale-95">
+                    ابدأ التحدي الآن <i class="fa-solid fa-rocket mr-2"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- STEP 2: GAMEPLAY DASHBOARD -->
+        <div id="gameplayScreen" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-start my-auto">
+            
+            <!-- Left Side: The Battery Level Stack (5 Clean Levels) -->
+            <div class="lg:col-span-4 flex flex-col items-center w-full">
+                <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 w-full flex flex-col items-center backdrop-blur shadow-xl">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-yellow-400"></i> حالة شحن البطارية
+                    </h3>
+                    
+                    <!-- Battery Cap -->
+                    <div class="battery-cap"></div>
+                    
+                    <!-- Battery Box (5 Levels Stacked from 5 at top to 1 at bottom) -->
+                    <div class="battery-outer flex flex-col gap-2 bg-slate-950 p-2.5 rounded-2xl border-4 border-slate-700 w-full max-w-[260px]">
+                        
+                        <!-- Level 5 (100% - Top) -->
+                        <div id="bat-level-5" class="battery-segment rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-slate-900 text-slate-500 border border-slate-800 transition-all duration-500">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-trophy text-yellow-400 text-sm"></i> <span class="badge-text">وصلت إلى القمة</span></span>
+                            <span class="text-[11px] opacity-80 font-black">100%</span>
+                        </div>
+
+                        <!-- Level 4 (80%) -->
+                        <div id="bat-level-4" class="battery-segment rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-slate-900 text-slate-500 border border-slate-800 transition-all duration-500">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-award text-pink-400 text-sm"></i> <span class="badge-text">فخورة بإنجازك</span></span>
+                            <span class="text-[11px] opacity-80 font-black">80%</span>
+                        </div>
+
+                        <!-- Level 3 (60%) -->
+                        <div id="bat-level-3" class="battery-segment rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-slate-900 text-slate-500 border border-slate-800 transition-all duration-500">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-crown text-yellow-300 text-sm"></i> <span class="badge-text">أنت ذكي وممتاز</span></span>
+                            <span class="text-[11px] opacity-80 font-black">60%</span>
+                        </div>
+
+                        <!-- Level 2 (40%) -->
+                        <div id="bat-level-2" class="battery-segment rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-slate-900 text-slate-500 border border-slate-800 transition-all duration-500">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-star text-teal-300 text-sm"></i> <span class="badge-text">أنت مبدع ومتميز</span></span>
+                            <span class="text-[11px] opacity-80 font-black">40%</span>
+                        </div>
+
+                        <!-- Level 1 (20% - Bottom) -->
+                        <div id="bat-level-1" class="battery-segment rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-slate-900 text-slate-500 border border-slate-800 transition-all duration-500">
+                            <span class="flex items-center gap-2"><i class="fa-regular fa-face-smile text-yellow-300 text-sm"></i> <span class="badge-text">أحسنت بداية طيبة</span></span>
+                            <span class="text-[11px] opacity-80 font-black">20%</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Question Card Interactive Area -->
+            <div class="lg:col-span-8 flex flex-col w-full">
+                <div class="bg-slate-800/80 border border-slate-700 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur relative">
+                    
+                    <!-- Top Info bar -->
+                    <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-700/60">
+                        <span id="questionIndicator" class="bg-indigo-950 text-indigo-300 border border-indigo-700/50 text-xs font-bold px-3 py-1.5 rounded-xl">
+                            السؤال ١ من ٥
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400">مستوى الشحن الحالي:</span>
+                            <span id="currentScorePercent" class="text-sm font-black text-yellow-400 bg-yellow-950/50 border border-yellow-700/50 px-2.5 py-0.5 rounded-lg">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Question Content -->
+                    <div id="questionContainer" class="space-y-6">
+                        <div class="inline-block bg-purple-900/50 text-purple-300 border border-purple-700/50 text-xs font-bold px-3 py-1 rounded-lg" id="indicatorBadge">
+                            المؤشر الأول: الجمع والطرح
+                        </div>
+
+                        <h3 id="questionText" class="text-xl md:text-2xl font-black text-white leading-relaxed">
+                            جارٍ تحميل السؤال...
+                        </h3>
+
+                        <!-- Choices -->
+                        <div id="choicesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                            <!-- Dynamic Choice Buttons -->
+                        </div>
+                    </div>
+
+                    <!-- Feedback Box (Success / Try Again) -->
+                    <div id="feedbackBox" class="hidden mt-6 p-4 rounded-2xl flex items-center justify-between border">
+                        <div class="flex items-center gap-3">
+                            <div id="feedbackIcon" class="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold"></div>
+                            <div>
+                                <h4 id="feedbackTitle" class="font-bold text-base"></h4>
+                                <p id="feedbackDesc" class="text-xs opacity-90"></p>
+                            </div>
+                        </div>
+                        <button id="nextBtn" onclick="nextQuestion()" class="bg-slate-900 hover:bg-slate-950 text-white font-bold text-sm px-5 py-2.5 rounded-xl border border-slate-700 transition">
+                            التالي <i class="fa-solid fa-arrow-left mr-1"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- STEP 3: CERTIFICATE MODAL -->
+    <div id="certificateModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white text-slate-900 rounded-3xl p-6 md:p-10 max-w-2xl w-full border-8 border-amber-400 shadow-2xl relative my-auto">
+            
+            <!-- Certificate Content Frame -->
+            <div class="border-2 border-amber-500/40 p-6 rounded-2xl text-center relative bg-gradient-to-b from-amber-50/40 via-white to-amber-50/20">
+                
+                <!-- School & Teacher Header -->
+                <div class="flex justify-between items-center text-xs md:text-sm font-bold text-slate-600 mb-6 border-b border-amber-200 pb-3">
+                    <span>مدرسة الإبداع للطفولة المبكرة</span>
+                    <span>قسم الرياضيات - الصف الثالث</span>
+                </div>
+
+                <!-- Medal Icon & Battery Badge -->
+                <div class="relative w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-amber-100 rounded-full animate-ping opacity-25"></div>
+                    <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-full flex items-center justify-center shadow-lg border-2 border-amber-500 text-amber-950">
+                        <i class="fa-solid fa-trophy text-4xl"></i>
+                    </div>
+                    <div class="absolute -bottom-2 bg-slate-900 text-yellow-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-yellow-400">
+                        100% ⚡
+                    </div>
+                </div>
+
+                <h2 class="text-2xl md:text-3xl font-black text-amber-800 mb-1">شهادة تفوق وإنجاز</h2>
+                <p class="text-slate-500 text-xs md:text-sm mb-6">تسر إدارة المدرسة ومعلمة المادة منح هذه الشهادة لـ</p>
+
+                <!-- Student Name Display -->
+                <div class="bg-amber-100/60 border-b-2 border-amber-400 py-3 px-6 rounded-xl inline-block mb-6 min-w-[280px]">
+                    <span id="certStudentName" class="text-xl md:text-2xl font-black text-slate-900"></span>
+                </div>
+
+                <p id="certTextPhrase" class="text-sm md:text-base text-slate-700 leading-relaxed font-bold max-w-lg mx-auto mb-8">
+                    تقديراً لإتمامه شحن بطارية المعرفة بنسبة 100% وحله جميع أسئلة ناتج التعلم الثالث (جمع وطرح الأعداد ضمن ثلاث منازل وتطبيقاتها) بتميز وإتقان.
+                </p>
+
+                <!-- Signatures Section -->
+                <div class="grid grid-cols-2 gap-4 text-xs font-bold border-t border-amber-200 pt-4 mt-6 text-slate-700">
+                    <div>
+                        <p class="text-slate-500 mb-1">معلمة المادة:</p>
+                        <p class="text-sm font-black text-amber-900">أ. فاطمة شنيمر</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 mb-1">حالة البطارية:</p>
+                        <p class="text-sm font-black text-emerald-600">مشحونة بالكامل 100% ⚡</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Action Buttons for Certificate -->
+            <div class="flex justify-center gap-4 mt-6 no-print">
+                <button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow-lg transition flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> طباعة / حفظ الشهادة
+                </button>
+                <button onclick="restartGame()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> إعادة التحدي
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        // Web Audio API helper safely
+        function playTone(freq, type, duration) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {
+                // Ignore audio context autoplay errors
+            }
+        }
+
+        function playSuccessSound() {
+            playTone(523.25, 'triangle', 0.2);
+            setTimeout(() => playTone(659.25, 'triangle', 0.2), 150);
+            setTimeout(() => playTone(783.99, 'triangle', 0.4), 300);
+        }
+
+        function playErrorSound() {
+            playTone(220, 'sawtooth', 0.2);
+            setTimeout(() => playTone(180, 'sawtooth', 0.3), 150);
+        }
+
+        // Questions Array (5 Questions tuned for quick classroom activity)
+        const questions = [
+            {
+                indicator: "المؤشر الأول: الجمع والطرح ضمن 3 منازل",
+                question: "ما هو ناتج جمع العددين: ١٦٤ + ١٧ = ؟",
+                options: ["أ) ١٨٢", "ب) ١٨١", "ج) ١٧١", "د) ١٨٠"],
+                correct: 1, // index 1 = ب (181)
+                desc: "١٦٤ + ١٧ = ١٨١"
+            },
+            {
+                indicator: "المؤشر الأول: الجمع والطرح ضمن 3 منازل",
+                question: "أي العبارات التالية ناتج قيمتها يساوي ٦٠٠؟",
+                options: ["أ) ٣١٠ + ١٩٠", "ب) ٢١٠ + ٢٨٠", "ج) ٤٤٠ + ١٦٠", "د) ٥٢٠ + ١٨٠"],
+                correct: 2, // index 2 = ج (440 + 160 = 600)
+                desc: "٤٤٠ + ١٦٠ = ٦٠٠ بالضبط!"
+            },
+            {
+                indicator: "المؤشر الثاني: تقدير نواتج الجمع والطرح",
+                question: "قدّر ناتج جمع العددين: ٢١ + ٤٨ باستخدام التقريب لأقرب عشرة:",
+                options: ["أ) ٦٠", "ب) ٦٥", "ج) ٦٨", "د) ٧٠"],
+                correct: 3, // index 3 = د (70)
+                desc: "٢١ تُقرّب إلى ٢٠ ، و ٤٨ تُقرّب إلى ٥٠ -> ٢٠ + ٥٠ = ٧٠"
+            },
+            {
+                indicator: "المؤشر الثاني: تقدير نواتج الجمع والطرح",
+                question: "مع فارس ٢٧٤ ريالات، أنفق منها ١٨٤ ريالات. قدّر تقريباً كم ريالات بقيت معه لأقرب مئة؟",
+                options: ["أ) ١٠ ريالات", "ب) ١٠٠ ريال", "ج) ٥٠ ريالا", "د) ٢٠٠ ريال"],
+                correct: 1, // index 1 = ب (100 ريال)
+                desc: "٢٧٤ تقرب لـ ٣٠٠ ، و ١٨٤ تقرب لـ ٢٠٠ -> ٣٠٠ - ٢٠٠ = ١٠٠ ريال"
+            },
+            {
+                indicator: "المؤشر الثالث: حل المسائل الحياتية التطبيقية",
+                question: "في مزرعة يوجد ٣٢٠ برتقالة و ٤١٥ تفاحة. كم إجمالي عدد الفواكه بالمزرعة؟",
+                options: ["أ) ٧٣٥", "ب) ٧٣٦", "ج) ٧٣٠", "د) ٧٥٣"],
+                correct: 0, // index 0 = أ (735)
+                desc: "٣٢٠ + ٤١٥ = ٧٣٥ فواكه"
+            }
+        ];
+
+        let currentQuestionIdx = 0;
+        let userScore = 0; // Total correct answers out of 5
+        let studentData = { name: '', gender: 'male' };
+
+        function startGame(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('studentName').value.trim();
+            const genderInput = document.querySelector('input[name="gender"]:checked').value;
+
+            if (!nameInput) return;
+
+            studentData.name = nameInput;
+            studentData.gender = genderInput;
+
+            // UI Adjustments for user info
+            document.getElementById('userNameText').innerText = studentData.name;
+            document.getElementById('userGenderIcon').className = studentData.gender === 'female' ? 
+                'fa-solid fa-user-graduate text-pink-400' : 'fa-solid fa-user-graduate text-blue-400';
+            document.getElementById('userInfoDisplay').classList.remove('hidden');
+
+            // Hide start screen, show gameplay screen
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameplayScreen').classList.remove('hidden');
+
+            // Reset Game state
+            currentQuestionIdx = 0;
+            userScore = 0;
+            updateBatteryUI();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestionIdx];
+            
+            // Hide feedback box
+            document.getElementById('feedbackBox').classList.add('hidden');
+            
+            // Update Question Indicator
+            document.getElementById('questionIndicator').innerText = `السؤال ${currentQuestionIdx + 1} من ${questions.length}`;
+            document.getElementById('indicatorBadge').innerText = q.indicator;
+            document.getElementById('questionText').innerText = q.question;
+
+            // Populate Choices
+            const choicesDiv = document.getElementById('choicesContainer');
+            choicesDiv.innerHTML = '';
+
+            q.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full bg-slate-900/90 hover:bg-indigo-950/80 border border-slate-700 hover:border-indigo-500/80 text-right p-4 rounded-2xl font-bold text-sm md:text-base text-slate-100 transition transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-between group';
+                btn.innerHTML = `
+                    <span>${optText}</span>
+                    <i class="fa-regular fa-circle text-slate-600 group-hover:text-indigo-400 transition"></i>
+                `;
+                btn.onclick = () => handleAnswer(idx);
+                choicesDiv.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedIndex) {
+            const q = questions[currentQuestionIdx];
+            const choicesDiv = document.getElementById('choicesContainer');
+            const btns = choicesDiv.querySelectorAll('button');
+            
+            // Disable all buttons after choice
+            btns.forEach(btn => btn.disabled = true);
+
+            const feedbackBox = document.getElementById('feedbackBox');
+            const feedbackIcon = document.getElementById('feedbackIcon');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackDesc = document.getElementById('feedbackDesc');
+
+            if (selectedIndex === q.correct) {
+                // Correct Answer
+                userScore++;
+                playSuccessSound();
+                
+                // Highlight choice
+                btns[selectedIndex].className = 'w-full bg-emerald-950/80 border-2 border-emerald-500 text-right p-4 rounded-2xl font-bold text-sm md:text-base text-emerald-200 flex items-center justify-between shadow-lg shadow-emerald-950/50';
+                btns[selectedIndex].querySelector('i').className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+
+                // Setup feedback UI
+                feedbackBox.className = 'mt-6 p-4 rounded-2xl flex items-center justify-between border bg-emerald-950/40 border-emerald-500/40 text-emerald-200';
+                feedbackIcon.className = 'w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold bg-emerald-500/20 border border-emerald-500 text-emerald-400';
+                feedbackIcon.innerHTML = '<i class="fa-solid fa-check"></i>';
+                
+                const praiseMsg = studentData.gender === 'female' ? 'إجابة صحيحة وممتازة يا بطلة! 👏' : 'إجابة صحيحة وممتازة يا بطل! 👏';
+                feedbackTitle.innerText = praiseMsg;
+                feedbackDesc.innerText = `التوضيح: ${q.desc}`;
+
+                // Update Battery fill upward
+                updateBatteryUI();
+
+            } else {
+                // Wrong Answer
+                playErrorSound();
+
+                // Highlight wrong and correct
+                btns[selectedIndex].className = 'w-full bg-rose-950/80 border-2 border-rose-500 text-right p-4 rounded-2xl font-bold text-sm md:text-base text-rose-200 flex items-center justify-between';
+                btns[selectedIndex].querySelector('i').className = 'fa-solid fa-circle-xmark text-rose-400 text-lg';
+
+                btns[q.correct].className = 'w-full bg-emerald-950/60 border border-emerald-500/60 text-right p-4 rounded-2xl font-bold text-sm md:text-base text-emerald-300 flex items-center justify-between';
+                btns[q.correct].querySelector('i').className = 'fa-solid fa-circle-check text-emerald-400';
+
+                // Setup feedback UI
+                feedbackBox.className = 'mt-6 p-4 rounded-2xl flex items-center justify-between border bg-rose-950/40 border-rose-500/40 text-rose-200';
+                feedbackIcon.className = 'w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold bg-rose-500/20 border border-rose-500 text-rose-400';
+                feedbackIcon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                
+                const failMsg = studentData.gender === 'female' ? 'محاولة تحتاج للتأمل، ركزي في السؤال التالي!' : 'محاولة تحتاج للتأمل، ركز في السؤال التالي!';
+                feedbackTitle.innerText = failMsg;
+                feedbackDesc.innerText = `الإجابة الصحيحة كانت: ${q.options[q.correct]} (${q.desc})`;
+            }
+
+            feedbackBox.classList.remove('hidden');
+        }
+
+        function updateBatteryUI() {
+            // Percent calculated based on correct answers so far
+            const currentPercent = (userScore / questions.length) * 100;
+            document.getElementById('currentScorePercent').innerText = `${currentPercent}%`;
+
+            // Active Level count based on userScore (1 to 5)
+            // Stack fills from bottom (Level 1) to top (Level 5)
+            const activeLevelsCount = userScore;
+
+            for (let lvl = 1; lvl <= 5; lvl++) {
+                const seg = document.getElementById(`bat-level-${lvl}`);
+                if (!seg) continue;
+
+                if (lvl <= activeLevelsCount) {
+                    // Make segment active with custom glowing colors per level
+                    seg.classList.add('active');
+                    
+                    if (lvl === 1) { // 20%
+                        seg.className = "battery-segment active rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-950 shadow-lg shadow-yellow-500/30 transition-all duration-500";
+                    } else if (lvl === 2) { // 40%
+                        seg.className = "battery-segment active rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-gradient-to-r from-teal-600 to-emerald-500 text-slate-950 shadow-lg shadow-teal-500/30 transition-all duration-500";
+                    } else if (lvl === 3) { // 60%
+                        seg.className = "battery-segment active rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-gradient-to-r from-sky-600 to-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30 transition-all duration-500";
+                    } else if (lvl === 4) { // 80%
+                        seg.className = "battery-segment active rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-pink-500/30 transition-all duration-500";
+                    } else if (lvl === 5) { // 100%
+                        seg.className = "battery-segment active rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 text-slate-950 shadow-xl shadow-yellow-400/50 transition-all duration-500 animate-pulse";
+                    }
+                } else {
+                    // Inactive level
+                    seg.classList.remove('active');
+                    seg.className = "battery-segment rounded-xl p-3 flex items-center justify-between text-xs font-bold bg-slate-900 text-slate-500 border border-slate-800 transition-all duration-500";
+                }
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIdx++;
+            if (currentQuestionIdx < questions.length) {
+                loadQuestion();
+            } else {
+                showFinalCertificate();
+            }
+        }
+
+        function showFinalCertificate() {
+            document.getElementById('certStudentName').innerText = studentData.name;
+            
+            const phrase = studentData.gender === 'female' ? 
+                `تقديراً لإتمامها شحن بطارية المعرفة بنسبة 100% وحلها جميع أسئلة ناتج التعلم الثالث (جمع وطرح الأعداد ضمن ثلاث منازل وتطبيقاتها الحياتية) بتميز وإتقان رائع.` : 
+                `تقديراً لإتمامه شحن بطارية المعرفة بنسبة 100% وحله جميع أسئلة ناتج التعلم الثالث (جمع وطرح الأعداد ضمن ثلاث منازل وتطبيقاتها الحياتية) بتميز وإتقان رائع.`;
+
+            document.getElementById('certTextPhrase').innerText = phrase;
+            document.getElementById('certificateModal').classList.remove('hidden');
+
+            // Trigger Confetti Effect
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function restartGame() {
+            document.getElementById('certificateModal').classList.add('hidden');
+            document.getElementById('gameplayScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('studentName').value = '';
+        }
+    </script>
+
+</body>
+</html>
